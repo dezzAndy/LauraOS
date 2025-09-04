@@ -8,5 +8,5 @@ def logo():
     .-/.    .-.`-'-'`--':/      `-'-'(    /     _    )     
    (_/ `-._.                          `-.'     (_.--'      
    """)
-   input("Press Enter to continue...")
+   input("Presiona Enter para continuar...")
    os.system('cls')

@@ -2,8 +2,47 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.layout import Layout
 from rich.align import Align
+from Objetos import ObjProceso
 
-def make_layout():
+def tabla_lote_actual(lote, numero_lote, lotes_pendientes):
+    tabla = Table(title=f"Lote actual #{numero_lote}\nLotes pendientes: {lotes_pendientes - numero_lote}")
+    tabla.add_column("Nombre", style="cyan")
+    tabla.add_column("TME", justify="center", style="magenta")
+    for proceso in lote:
+        tabla.add_row(proceso.nombre, str(proceso.tme))
+    return Panel(tabla, border_style="green")
+
+
+def panel_proceso(proceso: ObjProceso):
+    return Panel(
+        f"""
+[bold]ID:[/bold] \t\t{proceso.id}
+[bold]Nombre:[/bold] \t{proceso.nombre}
+[bold]Operación:[/bold] \t{proceso.operacion.num_a} {proceso.operacion.operador} {proceso.operacion.num_b}
+[bold]TME:[/bold] \t\t{proceso.tme}
+[bold]Transcurrido:[/bold] \t{proceso.transcurrido}
+[bold]Restante:[/bold] \t{proceso.restante}
+""",
+        title="Proceso en ejecución",
+        border_style="yellow",
+    )
+
+
+def tabla_terminados(lista):
+    tabla = Table(title="Procesos Terminados")
+    tabla.add_column("ID", style="cyan")
+    tabla.add_column("Operación", style="magenta")
+    tabla.add_column("Resultado", style="green")
+    for p in lista:
+        op = f"{p.operacion.num_a} {p.operacion.operador} {p.operacion.num_b}"
+        tabla.add_row(str(p.id), op, str(p.resultado))
+    return Panel(tabla, border_style="red")
+
+
+# ======================
+#  LAYOUT PRINCIPAL
+# ======================
+def make_layout(global_time, lote_actual, num_lote, proceso, terminados, lotes_pendientes: int):
     layout = Layout()
 
     layout.split(
@@ -13,58 +52,15 @@ def make_layout():
     )
 
     layout["body"].split_row(
-        Layout(name="lotes"),
-        Layout(name="ejecucion"),
+        Layout(name="lote"),
+        Layout(name="proceso"),
         Layout(name="terminados"),
     )
 
-    return layout
-
-
-def render_layout(global_time, lotes_pendientes, lote_actual, proceso, terminados):
-    layout = make_layout()
-
-    # Header: contador global
     layout["header"].update(Panel(f"Contador Global: {global_time}", title="Reloj"))
-
-    # Lote Actual
-    layout["lotes"].update(
-        Panel(f"{procesos_lote}", title="Lote Actual", border_style="yellow")
-    )
-
-    # Lote en ejecución
-    tabla_lote = Table(title="Lote en Ejecución")
-    tabla_lote.add_column("Nombre")
-    tabla_lote.add_column("TME")  # Tiempo Máximo Estimado
-    for p in lote_actual:
-        tabla_lote.add_row(p["nombre"], str(p["tme"]))
-    layout["ejecucion"].update(tabla_lote)
-
-    # Proceso en ejecución
-    proceso_panel = Panel(
-        f"""
-[bold]Nombre:[/bold] \t{proceso['nombre']}
-[bold]Operación:[/bold] \t{proceso['operacion']}
-[bold]TME:[/bold] \t\t{proceso['tme']}
-[bold]Programa #[/bold] \t{proceso['id']}
-[bold]Transcurrido:[/bold] \t{proceso['transcurrido']}
-[bold]Restante:[/bold] \t{proceso['restante']}
-""",
-        title="Proceso en Ejecución",
-        border_style="green",
-    )
-    layout["ejecucion"].update(proceso_panel)
-
-    # Procesos terminados
-    tabla_terminados = Table(title="Procesos Terminados")
-    tabla_terminados.add_column("ID")
-    tabla_terminados.add_column("Operación")
-    tabla_terminados.add_column("Resultado")
-    for t in terminados:
-        tabla_terminados.add_row(str(t["id"]), t["operacion"], str(t["resultado"]))
-    layout["terminados"].update(tabla_terminados)
-
-    # Footer
-    layout["footer"].update(Align.center("[bold]LauraOS[/bold]", vertical="middle"))
+    layout["lote"].update(tabla_lote_actual(lote_actual, num_lote, lotes_pendientes))
+    layout["proceso"].update(panel_proceso(proceso))
+    layout["terminados"].update(tabla_terminados(terminados))
+    layout["footer"].update(Panel(Align.center("[bold]LauraOS[/bold]", vertical="middle")))
 
     return layout

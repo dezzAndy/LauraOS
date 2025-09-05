@@ -3,7 +3,7 @@
 def validar_num_procesos():
     while True:
         try:
-            num_procesos = int(input("Cuantos procesos quieres iniciar?\n>"))
+            num_procesos = int(input("Cuantos procesos quieres iniciar?\n> "))
             return num_procesos
         except ValueError:
             print("\nError: Ingresa un número válido\n")
@@ -18,7 +18,10 @@ def validar_operacion():
             operador    =     input("    Operador (+, -, *, /, %, ^): ")
             num_b       = int(input("    Numero B:                  > "))
             if operador in operadores_validos:
-                return num_a, num_b, operador
+                if operador == "/" and num_b == 0:
+                    print("\nOperación no válida, dividir entre 0 es una indeterminación\n")
+                else:
+                    return num_a, num_b, operador
             else:
                 print("\nOperación no válida, solo puedes ingresar los operadores: +, -, *, /, %, ^\n")
         except ValueError:

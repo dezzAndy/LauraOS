@@ -1,5 +1,5 @@
 import os
-import msvcrt
+# import msvcrt
 
 def logo():
    os.system('clear')
@@ -10,6 +10,6 @@ def logo():
     .-/.    .-.`-'-'`--':/      `-'-'(    /     _    )     
    (_/ `-._.                          `-.'     (_.--'      
    """)
-   print("Presiona cualquier tecla para continuar...")
-   msvcrt.getch()
+   input("Presiona ENTER para continuar...")
+   # msvcrt.getch()
    os.system('clear')

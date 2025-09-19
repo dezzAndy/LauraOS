@@ -18,7 +18,7 @@ def validar_operacion():
             operador    =     input("    Operador (+, -, *, /, %, ^): ")
             num_b       = int(input("    Numero B:                  > "))
             if operador in operadores_validos:
-                if operador == "/" and num_b == 0:
+                if (operador == "/" or operador == "%") and (num_b == 0):
                     print("\nOperación no válida, dividir entre 0 es una indeterminación\n")
                 else:
                     return num_a, num_b, operador
@@ -46,6 +46,9 @@ def validar_tme():
     while True:
         try:
             tme = int(input("Tiempo Máximo de Ejecución (TME): "))
-            return tme
+            if tme >= 1:
+                return tme
+            else:
+                print("\nError: Ingresa un número válido mayor a 0.\n")
         except ValueError:
             print("\nError: Ingresa un número válido\n")

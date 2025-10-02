@@ -4,77 +4,93 @@ from rich.layout import Layout
 from rich.align import Align
 from Objetos import ObjProceso
 
-def tabla_lote_actual(lote, numero_lote, lotes_pendientes):
-    # Calculamos los lotes restantes
-    lotes_restantes = max(0, lotes_pendientes - numero_lote)
-    tabla = Table(title="Procesos en Espera", caption=f"(Lote #{numero_lote})\nLotes pendientes: {lotes_restantes}")
-    
+# a. Muestra el número de procesos en la cola de Nuevos
+def panel_nuevos(cola_nuevos):
+    num_nuevos = len(cola_nuevos)
+    return Panel(f"[bold cyan]{num_nuevos}[/]", title="[bold green]a.[/] Procesos Nuevos")
+
+# b. Muestra la cola de procesos Listos
+def tabla_listos(cola_listos):
+    tabla = Table(box=None)
     tabla.add_column("ID", style="cyan")
-    tabla.add_column("TME", justify="center", style="magenta")
-    tabla.add_column("Transcurrido", justify="center", style="yellow")
+    tabla.add_column("TME", style="magenta")
+    tabla.add_column("Transcurrido", style="yellow")
+    
+    for p in cola_listos:
+        tabla.add_row(str(p.id), str(p.tme), str(p.transcurrido))
+    
+    return Panel(tabla, title="[bold green]b.[/] Cola de Listos")
 
-    for proceso in lote:
-        # Si un proceso fue interrumpido (E) y regresó a la cola, mostrará su tiempo.
-        # Si es nuevo, mostrará 0.
-        tabla.add_row(
-            str(proceso.id), 
-            str(proceso.tme), 
-            str(proceso.transcurrido), 
-            end_section=True
-        )
-    return Panel(tabla, border_style="green", title="[bold green]a.[/] Procesos en Espera")
-
-
-def panel_proceso(proceso: ObjProceso):
+# c. Muestra el proceso actualmente en Ejecución
+def panel_ejecucion(proceso: ObjProceso):
+    if not proceso:
+        return Panel("[bold red]Ninguno[/]", title="[bold yellow]c.[/] Proceso en Ejecución")
+    
     return Panel(
-        f"""
-[bold]ID:[/bold] \t\t{proceso.id}
+        f"""[bold]ID:[/bold] \t\t{proceso.id}
 [bold]Operación:[/bold] \t{proceso.operacion.num_a} {proceso.operacion.operador} {proceso.operacion.num_b}
 [bold]TME:[/bold] \t\t{proceso.tme}
 [bold]Transcurrido:[/bold] \t{proceso.transcurrido}
-[bold]Restante:[/bold] \t{proceso.restante}
-""",
-        
+[bold]Restante:[/bold] \t{proceso.restante}""",
         title="[bold yellow]c.[/] Proceso en Ejecución",
         border_style="yellow",
     )
 
+# d. Muestra la cola de procesos Bloqueados
+def tabla_bloqueados(cola_bloqueados):
+    tabla = Table(box=None)
+    tabla.add_column("ID", style="cyan")
+    tabla.add_column("Tiempo Restante", style="red")
 
-def tabla_terminados(lista):
-    tabla = Table()
+    for p in cola_bloqueados:
+        tabla.add_row(str(p.id), str(p.tiempo_bloqueado_restante))
+        
+    return Panel(tabla, title="[bold green]d.[/] Cola de Bloqueados")
+
+# e. Muestra la tabla de procesos Terminados
+def tabla_terminados(terminados):
+    tabla = Table(box=None)
     tabla.add_column("ID", style="cyan")
     tabla.add_column("Operación", style="magenta")
     tabla.add_column("Resultado", style="green")
-    for p in lista:
+
+    for p in terminados:
         op = f"{p.operacion.num_a} {p.operacion.operador} {p.operacion.num_b}"
         tabla.add_row(str(p.id), op, str(p.resultado))
-    
-    return Panel(tabla, border_style="red", title="[bold red]d.[/] Trabajos Terminados")
+        
+    return Panel(tabla, title="[bold red]e.[/] Procesos Terminados")
 
-
-# ======================
-#  LAYOUT PRINCIPAL
-# ======================
-def make_layout(global_time, lote_actual, num_lote, proceso, terminados, lotes_pendientes: int):
+# LAYOUT PRINCIPAL
+def make_layout(pc, nuevos, listos, bloqueados, terminados, en_ejecucion):
     layout = Layout()
 
     layout.split(
         Layout(name="header", size=3),
-        Layout(name="body", ratio=1),
+        Layout(name="main", ratio=1),
         Layout(name="footer", size=3),
     )
 
-    layout["body"].split_row(
-        Layout(name="lote"),
-        Layout(name="proceso"),
-        Layout(name="terminados"),
+    layout["main"].split_row(
+        Layout(name="left_col", ratio=1),
+        Layout(name="right_col", ratio=2),
+    )
+    
+    layout["left_col"].split(
+        panel_nuevos(nuevos),
+        tabla_listos(listos)
     )
 
-    # Actualizamos los paneles con la información correspondiente
-    layout["header"].update(Panel(f"Contador Global: {global_time}", title="[bold cyan]Reloj[/]"))
-    layout["lote"].update(tabla_lote_actual(lote_actual, num_lote, lotes_pendientes))
-    layout["proceso"].update(panel_proceso(proceso))
-    layout["terminados"].update(tabla_terminados(terminados))
-    layout["footer"].update(Panel(Align.center("[bold]LauraOS[/bold]", vertical="middle")))
+    layout["right_col"].split(
+        panel_ejecucion(en_ejecucion),
+        Layout(name="bottom_row", ratio=2)
+    )
+    
+    layout["bottom_row"].split_row(
+        tabla_bloqueados(bloqueados),
+        tabla_terminados(terminados)
+    )
+
+    layout["header"].update(Panel(f"Contador Global: {pc}", title="[bold cyan]f.[/] Reloj"))
+    layout["footer"].update(Panel(Align.center("[bold]LauraOS v3.0[/bold]", vertical="middle")))
 
     return layout

@@ -1,6 +1,6 @@
 import os
-import msvcrt
 from clear_screen import clear_screen
+# import msvcrt
 
 def logo():
    clear_screen()
@@ -11,6 +11,6 @@ def logo():
     .-/.    .-.`-'-'`--':/      `-'-'(    /     _    )     
    (_/ `-._.                          `-.'     (_.--'      
    """)
-   print("Presiona cualquier tecla para continuar...")
-   msvcrt.getch()
+   input("Presiona ENTER para continuar...")
    clear_screen()
+   

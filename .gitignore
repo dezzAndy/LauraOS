@@ -6,3 +6,6 @@ panel.py
 procesos.txt
 pyvenv.cfg
 reloj_global.py
+build
+dist
+lauraos.spec

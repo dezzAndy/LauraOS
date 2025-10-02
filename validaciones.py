@@ -1,3 +1,4 @@
+import random
 # ================================================
 # Válida el numero de procesos:
 def validar_num_procesos():
@@ -9,43 +10,57 @@ def validar_num_procesos():
             print("\nError: Ingresa un número válido\n")
 
 # ================================================
-# Válida operación del roceso
+# Válida operación del proceso
+# Solicita dos números y genera un operador aleatorio
 def validar_operacion():
     operadores_validos = ["+", "-", "*", "/", "%", "^"]
     while True:
         try:
             num_a       = int(input("    Numero A:                  > "))
-            operador    =     input("    Operador (+, -, *, /, %, ^): ")
             num_b       = int(input("    Numero B:                  > "))
-            if operador in operadores_validos:
-                if operador == "/" and num_b == 0:
-                    print("\nOperación no válida, dividir entre 0 es una indeterminación\n")
-                else:
-                    return num_a, num_b, operador
+            
+            # Selección aleatoria de operador dependiendo de los casos válidos
+            if num_b == 0:
+                operador = random.choice(["+", "-", "*", "^"])
             else:
-                print("\nOperación no válida, solo puedes ingresar los operadores: +, -, *, /, %, ^\n")
+                operador = random.choice(operadores_validos)
+                
+            print(f"    Operador (+, -, *, /, %, ^): {operador}")
+            
+            return num_a, num_b, operador
+        
         except ValueError:
             print("\nError: Ingresa números válidos\n")
             
 # ================================================
 # Válida ID
+# Genera un ID secuencial que no se repita
 def validar_id(lista_id):
     while True:
         try:
-            id = int(input("ID del proceso (No se puede repetir): \n> "))
-            if id not in lista_id:
-                return id
+            if len(lista_id) >= 1:
+                id = lista_id[-1] + 1
+                if id not in lista_id:
+                    return id
+                else:
+                    print("\nID no válido, no se puede repetir\n")
             else:
-                print("\nID no válido, no se puede repetir\n")
+                id = 1
+                if id not in lista_id:
+                    return id
+                else:
+                    print("\nID no válido, no se puede repetir\n")
+                
         except ValueError:
             print("\nError: Ingresa números válidos\n")
             
 # ================================================
 # Valida TME
+# Genera un número aleatorio entre 6 y 20
 def validar_tme():
     while True:
         try:
-            tme = int(input("Tiempo Máximo de Ejecución (TME): "))
+            tme = random.randint(6, 20)
             return tme
         except ValueError:
             print("\nError: Ingresa un número válido\n")

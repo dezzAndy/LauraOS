@@ -1,6 +1,7 @@
 import math
 import time
 import keyboard
+import random
 from collections import deque
 from logo import logo
 from clear_screen import clear_screen
@@ -13,11 +14,15 @@ from layout import *
 
 console = Console()
 
-# --- Banderas y funciones de interrupción (sin cambios) ---
+# --- Banderas para interrupciones ---
 interrupcion_io = False
 interrupcion_error = False
 pausa = False
+# [NUEVO] Banderas para 'N' y 'B'
+crear_nuevo_proceso = False
+mostrar_bcp = False
 
+# --- Funciones para manejar las interrupciones ---
 def gestionar_interrupcion_io(e):
     global interrupcion_io
     if not pausa: interrupcion_io = True
@@ -31,42 +36,29 @@ def gestionar_pausa(e):
     pausa = True
 
 def gestionar_continuar(e):
-    global pausa
+    global pausa, mostrar_bcp
     pausa = False
+    mostrar_bcp = False # 'C' también sale de la vista BCP
 
+def gestionar_crear_nuevo(e):
+    global crear_nuevo_proceso
+    if not pausa: crear_nuevo_proceso = True
+
+def gestionar_mostrar_bcp(e):
+    global mostrar_bcp, pausa
+    # 'B' activa la vista BCP y pausa la simulación
+    if not mostrar_bcp:
+        mostrar_bcp = True
+        pausa = True
+
+# --- Asignación de teclas ---
 keyboard.on_press_key("e", gestionar_interrupcion_io, suppress=True)
 keyboard.on_press_key("w", gestionar_error, suppress=True)
 keyboard.on_press_key("p", gestionar_pausa, suppress=True)
 keyboard.on_press_key("c", gestionar_continuar, suppress=True)
+keyboard.on_press_key("n", gestionar_crear_nuevo, suppress=True)
+keyboard.on_press_key("b", gestionar_mostrar_bcp, suppress=True)
 
-# --- Reporte Final (Ajuste en cálculo de Tiempo de Espera) ---
-def mostrar_reporte_final(procesos_terminados):
-    clear_screen()
-    console.print("[bold cyan]Simulación Finalizada. Reporte de Procesos:[/bold cyan]\n")
-    tabla_reporte = Table(title="Tiempos de Procesos")
-    columnas = ["ID", "Estado Final", "T. Llegada", "T. Finalización", "T. Retorno", "T. Respuesta", "T. Espera", "T. Servicio"]
-    for col in columnas:
-        tabla_reporte.add_column(col, justify="center")
-
-    for p in sorted(procesos_terminados, key=lambda x: x.id):
-        p.tiempo_retorno = p.tiempo_finalizacion - p.tiempo_llegada
-        p.tiempo_servicio = p.transcurrido
-        
-        # [CORREGIDO] Aseguramos que el tiempo de espera no sea negativo.
-        # Esta es la definición correcta: Retorno - Servicio.
-        p.tiempo_espera = p.tiempo_retorno - p.tiempo_servicio
-        
-        if p.tiempo_primera_ejecucion is not None:
-            p.tiempo_respuesta = p.tiempo_primera_ejecucion - p.tiempo_llegada
-        else:
-            p.tiempo_respuesta = -1
-        
-        estado_final = "Error" if p.resultado == "Error" else "OK"
-        tabla_reporte.add_row(
-            str(p.id), estado_final, str(p.tiempo_llegada), str(p.tiempo_finalizacion),
-            str(p.tiempo_retorno), str(p.tiempo_respuesta), str(p.tiempo_espera), str(p.tiempo_servicio)
-        )
-    console.print(tabla_reporte)
 
 # =============================================================================
 # --- PROGRAMA PRINCIPAL ---
@@ -81,12 +73,12 @@ cola_bloqueados = deque()
 procesos_terminados = []
 proceso_en_ejecucion = None
 lista_id = []
+todos_los_procesos = [] # Lista maestra para el BCP
 
 # --- Creación de procesos ---
 clear_screen()
-print(f"Creando {num_procesos} procesos...")
-# (Este bucle usa tus funciones de validaciones que ya funcionan correctamente)
-for i in range(num_procesos):
+print(f"Creando {num_procesos} procesos iniciales...")
+for _ in range(num_procesos):
     id = validar_id(lista_id)
     lista_id.append(id)
     num_a, num_b, operador = validar_operacion()
@@ -94,6 +86,7 @@ for i in range(num_procesos):
     operacion = ObjOperacion(num_a, num_b, operador)
     proceso = ObjProceso(id, operacion, tme)
     cola_nuevos.append(proceso)
+    todos_los_procesos.append(proceso)
 
 # --- SIMULACIÓN PRINCIPAL ---
 pc = 0
@@ -104,61 +97,90 @@ num_a_admitir = min(len(cola_nuevos), MAX_PROCESOS_EN_MEMORIA)
 for _ in range(num_a_admitir):
     proceso_admitido = cola_nuevos.popleft()
     proceso_admitido.tiempo_llegada = 0
+    proceso_admitido.estado = "Listo"
     cola_listos.append(proceso_admitido)
 if cola_listos:
     proceso_en_ejecucion = cola_listos.popleft()
     proceso_en_ejecucion.tiempo_primera_ejecucion = 0
+    proceso_en_ejecucion.estado = "Ejecución"
 
 with Live(make_layout(pc, cola_nuevos, cola_listos, cola_bloqueados, procesos_terminados, proceso_en_ejecucion), 
           refresh_per_second=4, screen=True, vertical_overflow="visible") as live:
 
     while cola_nuevos or cola_listos or cola_bloqueados or proceso_en_ejecucion:
         
+        # --- PAUSA Y VISTA BCP ---
+        if pausa:
+            # Si la pausa fue por la tecla 'B', mostramos la tabla BCP
+            if mostrar_bcp:
+                live.stop() # Detenemos el live display para imprimir la tabla estática
+                clear_screen()
+                console.print(tabla_bcp(todos_los_procesos, pc))
+                console.print("\n[bold yellow]Mostrando BCP. Simulación en Pausa. Presiona 'C' para continuar...[/bold yellow]")
+                # Esperamos a que la tecla 'C' ponga mostrar_bcp y pausa en False
+                while mostrar_bcp:
+                    time.sleep(0.1)
+                clear_screen()
+                live.start() # Reanudamos el live display
+            else: # Pausa normal con 'P'
+                while pausa:
+                    time.sleep(0.1)
+        
         live.update(make_layout(pc, cola_nuevos, cola_listos, cola_bloqueados, procesos_terminados, proceso_en_ejecucion))
         time.sleep(1)
 
-        while pausa:
-            time.sleep(0.1)
+        # --- LÓGICA PARA CREAR NUEVO PROCESO (TECLA 'N') ---
+        if crear_nuevo_proceso:
+            with live.console.capture(): # Capturamos el input para no romper el layout
+                clear_screen()
+                print("--- Creando Nuevo Proceso en Tiempo de Ejecución ---")
+                id = validar_id(lista_id)
+                lista_id.append(id)
+                num_a, num_b, operador = validar_operacion()
+                tme = validar_tme()
+            nuevo_proceso = ObjProceso(id, ObjOperacion(num_a, num_b, operador), tme)
+            cola_nuevos.append(nuevo_proceso)
+            todos_los_procesos.append(nuevo_proceso)
+            crear_nuevo_proceso = False
+            clear_screen() # Limpiamos la pantalla después de la captura
 
-        # 1. EVENTOS QUE CONSUMEN EL TICK ACTUAL (pc)
-        # -----------------------------------------------------------------
+        # --- 1. EVENTOS QUE CONSUMEN EL TICK ACTUAL (pc) ---
         if proceso_en_ejecucion:
             proceso_en_ejecucion.transcurrido += 1
             proceso_en_ejecucion.restante -= 1
-
         for proceso in cola_bloqueados:
             proceso.tiempo_bloqueado_restante -= 1
+            proceso.tiempo_transcurrido_bloqueado += 1
 
-        # 2. TRANSICIONES DE ESTADO (Consecuencias de los eventos)
-        # -----------------------------------------------------------------
-        # Se revisa la cola de bloqueados PRIMERO
+        # --- 2. TRANSICIONES DE ESTADO ---
         procesos_desbloqueados = []
         for proceso in cola_bloqueados:
             if proceso.tiempo_bloqueado_restante <= 0:
                 procesos_desbloqueados.append(proceso)
         for proceso in procesos_desbloqueados:
             cola_bloqueados.remove(proceso)
+            proceso.estado = "Listo"
             cola_listos.append(proceso)
 
-        # Se revisa el proceso en ejecución
         if proceso_en_ejecucion:
-            # Interrupción por I/O (E)
             if interrupcion_io:
                 proceso_en_ejecucion.tiempo_bloqueado_restante = 8
+                proceso_en_ejecucion.tiempo_transcurrido_bloqueado = 0
+                proceso_en_ejecucion.estado = "Bloqueado"
                 cola_bloqueados.append(proceso_en_ejecucion)
                 proceso_en_ejecucion = None
                 interrupcion_io = False
-            # Interrupción por Error (W)
             elif interrupcion_error:
                 proceso_en_ejecucion.resultado = "Error"
                 proceso_en_ejecucion.tiempo_finalizacion = pc + 1
+                proceso_en_ejecucion.estado = "Terminado"
                 procesos_terminados.append(proceso_en_ejecucion)
                 proceso_en_ejecucion = None
                 interrupcion_error = False
-            # El proceso termina normalmente
             elif proceso_en_ejecucion.restante <= 0:
                 op = proceso_en_ejecucion.operacion
                 match op.operador:
+                    # (cálculo de resultado)
                     case '+': proceso_en_ejecucion.resultado = op.num_a + op.num_b
                     case '-': proceso_en_ejecucion.resultado = op.num_a - op.num_b
                     case '*': proceso_en_ejecucion.resultado = op.num_a * op.num_b
@@ -166,28 +188,30 @@ with Live(make_layout(pc, cola_nuevos, cola_listos, cola_bloqueados, procesos_te
                     case '^': proceso_en_ejecucion.resultado = pow(op.num_a, op.num_b)
                     case '%': proceso_en_ejecucion.resultado = op.num_a % op.num_b
                 proceso_en_ejecucion.tiempo_finalizacion = pc + 1
+                proceso_en_ejecucion.estado = "Terminado"
                 procesos_terminados.append(proceso_en_ejecucion)
                 proceso_en_ejecucion = None
 
-        # 3. PLANIFICACIÓN (Decisiones para el siguiente tick)
-        # -----------------------------------------------------------------
-        # Planificador a Largo Plazo
+        # --- 3. PLANIFICACIÓN ---
         procesos_en_memoria = len(cola_listos) + len(cola_bloqueados) + (1 if proceso_en_ejecucion else 0)
         if procesos_en_memoria < MAX_PROCESOS_EN_MEMORIA and cola_nuevos:
             proceso_admitido = cola_nuevos.popleft()
             proceso_admitido.tiempo_llegada = pc + 1
+            proceso_admitido.estado = "Listo"
             cola_listos.append(proceso_admitido)
         
-        # Planificador a Corto Plazo
         if not proceso_en_ejecucion and cola_listos:
             proceso_en_ejecucion = cola_listos.popleft()
+            proceso_en_ejecucion.estado = "Ejecución"
             if proceso_en_ejecucion.tiempo_primera_ejecucion is None:
                 proceso_en_ejecucion.tiempo_primera_ejecucion = pc + 1
 
-        # 4. AVANCE DEL RELOJ
-        # -----------------------------------------------------------------
+        # --- 4. AVANCE DEL RELOJ ---
         pc += 1
 
 # --- FIN DE LA SIMULACIÓN ---
-mostrar_reporte_final(procesos_terminados)
+clear_screen()
+console.print("[bold cyan]Simulación Finalizada. Reporte Final de Procesos (BCP):[/bold cyan]\n")
+# Mostrar la tabla BCP al finalizar
+console.print(tabla_bcp(todos_los_procesos, pc))
 input("\nPresiona Enter para salir...")

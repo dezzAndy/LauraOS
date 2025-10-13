@@ -12,7 +12,7 @@ class ObjProceso():
         self.restante = tme
         
         # Estado y tiempos para métricas
-        self.estado = "Nuevo"
+        self.estado = "Nuevo" # Se actualizará a "Listo", "Ejecución", "Bloqueado", "Terminado"
         self.tiempo_llegada = None
         self.tiempo_finalizacion = None
         self.tiempo_retorno = 0
@@ -23,9 +23,11 @@ class ObjProceso():
         # Atributos para el estado Bloqueado
         self.tiempo_bloqueado_restante = 0
         self.tiempo_primera_ejecucion = None
+        # [NUEVO] Atributo para cumplir con el requisito 5.d.ii
+        self.tiempo_transcurrido_bloqueado = 0
 
 
-# Objeto Operación
+# Objeto Operación (sin cambios)
 class ObjOperacion():
     def __init__(self, num_a, num_b, operador):
         self.num_a = num_a

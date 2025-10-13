@@ -1,13 +1,19 @@
 import random
+from clear_screen import clear_screen
 # ================================================
 # Válida el numero de procesos:
 def validar_num_procesos():
     while True:
         try:
             num_procesos = int(input("Cuantos procesos quieres iniciar?\n> "))
+            if num_procesos < 1:
+                clear_screen()
+                print("Error: Ingresa un número mayor a 0\n")
+                continue
             return num_procesos
         except ValueError:
-            print("\nError: Ingresa un número válido\n")
+            clear_screen()
+            print("Error: Ingresa un número válido\n")
 
 # ================================================
 # Válida operación del proceso
@@ -16,9 +22,9 @@ def validar_operacion():
     operadores_validos = ["+", "-", "*", "/", "%", "^"]
     while True:
         try:
-            num_a       = int(input("    Numero A:                  > "))
-            num_b       = int(input("    Numero B:                  > "))
-            
+            num_a       = random.randint(0, 100)
+            num_b       = random.randint(0, 100)
+
             # Selección aleatoria de operador dependiendo de los casos válidos
             if num_b == 0:
                 operador = random.choice(["+", "-", "*", "^"])

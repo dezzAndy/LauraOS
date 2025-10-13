@@ -91,6 +91,6 @@ def make_layout(pc, nuevos, listos, bloqueados, terminados, en_ejecucion):
     )
 
     layout["header"].update(Panel(f"Contador Global: {pc}", title="[bold cyan]f.[/] Reloj"))
-    layout["footer"].update(Panel(Align.center("[bold]LauraOS v3.0[/bold]", vertical="middle")))
+    layout["footer"].update(Panel(Align.center("[bold]LauraOS v3.1[/bold]", vertical="middle")))
 
     return layout

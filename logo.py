@@ -1,4 +1,3 @@
-import os
 from clear_screen import clear_screen
 # import msvcrt
 

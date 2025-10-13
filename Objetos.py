@@ -11,7 +11,7 @@ class ObjProceso():
         self.transcurrido = 0
         self.restante = tme
         
-        # Estado y tiempos para métricas (Punto 9)
+        # Estado y tiempos para métricas
         self.estado = "Nuevo"
         self.tiempo_llegada = None
         self.tiempo_finalizacion = None
@@ -25,7 +25,7 @@ class ObjProceso():
         self.tiempo_primera_ejecucion = None
 
 
-# Objeto Operación (sin cambios)
+# Objeto Operación
 class ObjOperacion():
     def __init__(self, num_a, num_b, operador):
         self.num_a = num_a

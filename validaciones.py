@@ -16,6 +16,21 @@ def validar_num_procesos():
             print("Error: Ingresa un número válido\n")
 
 # ================================================
+# Válida el valor del Quantum
+def validar_quantum():
+    while True:
+        try:
+            quantum = int(input("Ingresa el valor del Quantum:\n> "))
+            if quantum < 1:
+                clear_screen()
+                print("Error: Ingresa un Quantum mayor a 0\n")
+                continue
+            return quantum
+        except ValueError:
+            clear_screen()
+            print("Error: Ingresa un número válido\n")
+
+# ================================================
 # Válida operación del proceso
 # Solicita dos números y genera un operador aleatorio
 def validar_operacion():
